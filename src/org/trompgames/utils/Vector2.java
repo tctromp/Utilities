@@ -76,6 +76,14 @@ public class Vector2 {
 	}	
 	
 	@Override
+	public boolean equals(Object o) {
+		if(!(o instanceof Vector2)) return false;
+		Vector2 v = (Vector2) o;
+		if(this.x == v.x && this.y == v.y) return true;
+		return false;
+	}
+	
+	@Override
 	public String toString(){
 		return "X: " + x + " Y: " + y; 
 	}

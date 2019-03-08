@@ -6,6 +6,9 @@ public abstract class GameHandler {
 	private final int TPS;
 	private boolean lockFPS;
 	
+	private double currentFPS;
+	private double currentTPS;
+	
 	private GameThread gameThread;
 	
 	/*
@@ -18,7 +21,6 @@ public abstract class GameHandler {
 		this.TPS = TPS;
 		this.lockFPS = lockFPS;
 		this.gameThread = new GameThread(this);
-		gameThread.start();
 	}
 	
 	public int getFPS(){
@@ -37,6 +39,12 @@ public abstract class GameHandler {
 		return msBetweenFrames;
 	}
 	
+	public int getFrameNano() {
+		int nanoBetweenFrames = (int) Math.round(1000000000.0/FPS);
+		if(nanoBetweenFrames == 0) nanoBetweenFrames = 1;
+		return nanoBetweenFrames;
+	}
+	
 	public int getTPS(){
 		return TPS;
 	}
@@ -45,10 +53,15 @@ public abstract class GameHandler {
 		return lockFPS;
 	}
 	
-	public abstract void update(int deltaTime);
+	protected void startGameThread() {
+		gameThread.start();
+
+	}
+	
+	public abstract boolean update(double deltaTime);
 
 	
-	public abstract void fixedUpdate(int deltaTime);
+	public abstract void fixedUpdate(double deltaTime);
 	
 	
 		
@@ -70,16 +83,26 @@ public abstract class GameHandler {
 			long lastFixedTime = System.currentTimeMillis();
 			long lastFrameTime = System.currentTimeMillis();
 			
+			long lastFixedNanoTime = System.nanoTime();
+			long lastFrameNanoTime = System.nanoTime();
+			
+			
 			while(true){
 				if(fixedUpdateEnabled){					
 					if((lastFixedTime + gameHandler.getFixedMS() <= System.currentTimeMillis())){					
-						gameHandler.fixedUpdate((int) (System.currentTimeMillis() - lastFixedTime));
+						gameHandler.fixedUpdate(1.0 * (System.nanoTime() - lastFixedNanoTime)/1000000000);
+						lastFixedNanoTime = System.nanoTime();
 						lastFixedTime = System.currentTimeMillis();
 					}
 				}if(frameUpdateEnabled){
-					if((lastFrameTime + gameHandler.getFrameMS() <= System.currentTimeMillis())){				
-						gameHandler.update((int) (System.currentTimeMillis() - lastFrameTime));
-						lastFrameTime  = System.currentTimeMillis();
+					if(!gameHandler.lockFPS || (lastFrameNanoTime + gameHandler.getFrameNano() < System.nanoTime())){				
+						//boolean updateSuccess = gameHandler.update(1.0 * (System.nanoTime() - lastFrameNanoTime)/1000000000);
+						boolean updateSuccess = gameHandler.update(1.0 * (System.currentTimeMillis() - lastFrameTime)/1000);
+
+						if(updateSuccess) {
+							lastFrameNanoTime = System.nanoTime();
+							lastFrameTime = System.currentTimeMillis();
+						}
 					}
 					
 				}
@@ -111,5 +134,6 @@ public abstract class GameHandler {
 		}
 	}
 	
+
 	
 }
